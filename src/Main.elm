@@ -16,7 +16,7 @@ import PixelEngine.Options exposing (Options)
 import PixelEngine.Tile as Tile exposing (Tile)
 import PixelEngine.Image as Image
 
-type alias Player = 
+type alias Player =
   { position : Position
   , coinCount : Int
   }
@@ -28,16 +28,18 @@ type Entity =
 
 type alias Platform = Grid.Grid Entity
 
-type alias Model = 
+type alias Model =
   { player : Player
   , platform : Platform
+  , finishLine : Position
+  , finished : Bool
   }
 
 type Msg = MovePlayer Direction
 
 
 main : PixelEngine () Model Msg
-main = game 
+main = game
   { init = init
   , update = update
   , subscriptions = subscriptions
@@ -46,7 +48,7 @@ main = game
   , width = width
   }
 
-boardSize : Int 
+boardSize : Int
 boardSize = 30
 
 tileSize : Int
@@ -59,22 +61,27 @@ initPlayer : Player
 initPlayer = { position = (0, 0) , coinCount = 0}
 
 initPlatform : Platform
-initPlatform = 
-  Grid.fill 
-    (\(x,y) -> 
+initPlatform =
+  Grid.fill
+    (\(x,y) ->
       if y == 15 && x > 10 && x < 20 then
         Just Platform
       else if y == 14 && x > 10 && x < 20 then
         Just Coin
-      else 
+      else
         Nothing
     )
     { rows    = boardSize
-    , columns = boardSize 
+    , columns = boardSize
     }
 
 initModel : Model
-initModel = { player = initPlayer, platform = initPlatform }
+initModel =
+  { player = initPlayer
+  , platform = initPlatform
+  , finishLine = (29,29)
+  , finished = False
+  }
 
 init : () -> (Model, Cmd Msg)
 init _ = (initModel, Cmd.none)
@@ -101,35 +108,41 @@ controls input =
             Nothing
 
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg ({player, platform} as model) = 
+update msg ({player, platform} as model) =
   case msg of
-    MovePlayer direction -> 
+    MovePlayer direction ->
       let
-        (g, p) = 
-          checkAndMove platform direction player 
+        (g, p) =
+          checkAndMove platform direction player
           |> coinPickup platform
       in
-        ({ model | player = p, platform = g } , Cmd.none)
+        ( { model |
+              player = p
+            , platform = g
+            , finished = checkToWin p model.finishLine
+          }
+        , Cmd.none
+        )
 
 checkAndMove : Grid.Grid Entity -> Direction -> Player -> Player
-checkAndMove grid direction player = 
+checkAndMove grid direction player =
   player.position
     |> Position.add (direction |> Position.fromDirection)
-    |> (\newPos -> 
+    |> (\newPos ->
         case (Grid.get newPos grid) of
           Err _       -> player
-          Ok (entity) -> 
+          Ok (entity) ->
             case entity of
               (Just Platform) -> player
               _               -> { player | position = newPos }
       )
 
 coinPickup : Grid.Grid Entity -> Player -> (Grid.Grid Entity, Player)
-coinPickup grid player = 
+coinPickup grid player =
   Grid.get (player.position) grid
     |> Result.map (\entity ->
         case entity of
-          (Just Coin) -> 
+          (Just Coin) ->
             ( Grid.remove player.position grid |> Result.withDefault grid
             , { player | coinCount = player.coinCount + 1}
             )
@@ -137,6 +150,8 @@ coinPickup grid player =
       )
     |> Result.withDefault (grid, player)
 
+checkToWin : Player -> Position -> Bool
+checkToWin player finishLinePosition = player.position == finishLinePosition
 
 subscriptions : Model -> Sub Msg
 subscriptions _ = Sub.none
@@ -157,22 +172,28 @@ view model =
     }
 
 areas : Model -> List (Area Msg)
-areas model = 
+areas model =
   [ scoreArea model
-  , gameArea model 
+  , gameArea model
   ]
 
 scoreArea : Model -> Area Msg
-scoreArea model = 
+scoreArea model =
   PixelEngine.imageArea
     { height = 30
     , background = colorBackground (rgb255 255 255 255)
     }
-    [ ((0,0), Image.fromText (coinCountStr model) font) 
+    [ ((0,0), Image.fromText ((coinCountStr model) ++ " " ++ (hasWonStr model)) font)
     ]
 
 coinCountStr : Model -> String
 coinCountStr = .player >> .coinCount >> String.fromInt >> String.append "Coins - "
+
+hasWonStr : Model -> String
+hasWonStr model =
+  case model.finished of
+    True -> "Won"
+    False -> "Not Won"
 
 font : Tile.Tileset
 font = Tile.tileset
@@ -182,7 +203,7 @@ font = Tile.tileset
   }
 
 gameArea : Model -> Area Msg
-gameArea { platform, player} =
+gameArea { platform, player} = -- TODO: add ", finishLine" to this inputs of the function
   PixelEngine.tiledArea
       { rows = boardSize
       , tileset =
@@ -194,23 +215,23 @@ gameArea { platform, player} =
       }
       ( platform
           |> Grid.toList
-          |> List.map 
+          |> List.map
               (\(pos, entity) ->
                 ( pos
-                , case entity of 
+                , case entity of
                     Platform -> platformTile
                     Coin     -> coinTile
                     _        -> emptyTile
                 )
               )
-          |> (::) (player.position, playerTile)
+          |> (::) (player.position, playerTile) -- TODO: add a duplicate of this line below this line and change the pair to have the finishLine (which is a position) and the finishLineTile
       )
 
 playerTile : Tile Msg
-playerTile = 
-  Tile.fromPosition (0,1) 
+playerTile =
+  Tile.fromPosition (0,1)
     |> Tile.movable "player"
-    |> Tile.jumping 
+    |> Tile.jumping
 
 platformTile : Tile Msg
 platformTile = Tile.fromPosition (1,0)
@@ -220,3 +241,6 @@ emptyTile = Tile.fromPosition (0, 0)
 
 coinTile : Tile Msg
 coinTile = Tile.fromPosition (0,0)
+
+finishLineTile : Tile Msg
+finishLineTile = -- TODO: write the definition of this function
