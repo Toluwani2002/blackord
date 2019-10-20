@@ -203,7 +203,7 @@ font = Tile.tileset
   }
 
 gameArea : Model -> Area Msg
-gameArea { platform, player} = -- TODO: add ", finishLine" to this inputs of the function
+gameArea { platform, player, finishLine } = -- TODO: add ", finishLine" to this inputs of the function
   PixelEngine.tiledArea
       { rows = boardSize
       , tileset =
@@ -224,7 +224,8 @@ gameArea { platform, player} = -- TODO: add ", finishLine" to this inputs of the
                     _        -> emptyTile
                 )
               )
-          |> (::) (player.position, playerTile) -- TODO: add a duplicate of this line below this line and change the pair to have the finishLine (which is a position) and the finishLineTile
+          |> (::) (player.position, playerTile)
+          |> (::) (finishLine, finishLineTile)-- TODO: add a duplicate of this line below this line and change the pair to have the finishLine (which is a position) and the finishLineTile
       )
 
 playerTile : Tile Msg
@@ -243,4 +244,4 @@ coinTile : Tile Msg
 coinTile = Tile.fromPosition (0,0)
 
 finishLineTile : Tile Msg
-finishLineTile = -- TODO: write the definition of this function
+finishLineTile = Tile.fromPosition (1,1)
