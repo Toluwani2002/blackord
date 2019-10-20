@@ -68,6 +68,12 @@ initPlatform =
         Just Platform
       else if y == 14 && x > 10 && x < 20 then
         Just Coin
+      else if y == 19 && x >= 0 && x < 9 then
+        Just Platform
+      else if y == 23 && x > 21 && x < 29 then
+        Just Platform
+      else if x == 14 && y > 15 && y < 20 then
+        Just Platform
       else
         Nothing
     )
@@ -151,7 +157,7 @@ coinPickup grid player =
     |> Result.withDefault (grid, player)
 
 checkToWin : Player -> Position -> Bool
-checkToWin player finishLinePosition = player.position == finishLinePosition
+checkToWin player finishLinePosition = player.position == finishLinePosition && player.coinCount == 9
 
 subscriptions : Model -> Sub Msg
 subscriptions _ = Sub.none
