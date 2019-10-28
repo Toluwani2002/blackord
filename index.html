@@ -9745,14 +9745,15 @@ var author$project$Main$initPlayer = {
 	coinCount: 0,
 	position: _Utils_Tuple2(0, 0)
 };
-var author$project$Main$initModel = {
+var author$project$Main$initGameState = {
 	finishLine: _Utils_Tuple2(29, 29),
-	finished: false,
 	platform: author$project$Main$initPlatform,
 	player: author$project$Main$initPlayer
 };
 var author$project$Main$init = function (_n0) {
-	return _Utils_Tuple2(author$project$Main$initModel, elm$core$Platform$Cmd$none);
+	return _Utils_Tuple2(
+		elm$core$Maybe$Just(author$project$Main$initGameState),
+		elm$core$Platform$Cmd$none);
 };
 var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
 var author$project$Main$subscriptions = function (_n0) {
@@ -9805,9 +9806,9 @@ var author$project$Main$checkAndMove = F3(
 				Orasund$elm_game_essentials$Grid$Position$fromDirection(direction),
 				player.position));
 	});
-var author$project$Main$checkToWin = F2(
-	function (player, finishLinePosition) {
-		return _Utils_eq(player.position, finishLinePosition) && (player.coinCount === 9);
+var author$project$Main$checkToWin = F3(
+	function (player, finishLinePosition, gstate) {
+		return (_Utils_eq(player.position, finishLinePosition) && (player.coinCount === 9)) ? elm$core$Maybe$Nothing : elm$core$Maybe$Just(gstate);
 	});
 var elm$core$Dict$getMin = function (dict) {
 	getMin:
@@ -10225,25 +10226,25 @@ var author$project$Main$coinPickup = F2(
 				A2(Orasund$elm_game_essentials$Grid$Bordered$get, player.position, grid)));
 	});
 var author$project$Main$update = F2(
-	function (msg, model) {
-		var player = model.player;
-		var platform = model.platform;
-		var direction = msg.a;
-		var _n1 = A2(
-			author$project$Main$coinPickup,
-			platform,
-			A3(author$project$Main$checkAndMove, platform, direction, player));
-		var g = _n1.a;
-		var p = _n1.b;
-		return _Utils_Tuple2(
-			_Utils_update(
+	function (msg, x) {
+		if (x.$ === 'Nothing') {
+			return _Utils_Tuple2(x, elm$core$Platform$Cmd$none);
+		} else {
+			var model = x.a;
+			var direction = msg.a;
+			var _n2 = A2(
+				author$project$Main$coinPickup,
+				model.platform,
+				A3(author$project$Main$checkAndMove, model.platform, direction, model.player));
+			var g = _n2.a;
+			var p = _n2.b;
+			var newGameState = _Utils_update(
 				model,
-				{
-					finished: A2(author$project$Main$checkToWin, p, model.finishLine),
-					platform: g,
-					player: p
-				}),
-			elm$core$Platform$Cmd$none);
+				{platform: g, player: p});
+			return _Utils_Tuple2(
+				A3(author$project$Main$checkToWin, p, model.finishLine, newGameState),
+				elm$core$Platform$Cmd$none);
+		}
 	});
 var Orasund$elm_game_essentials$Grid$Bordered$toList = function (_n0) {
 	var dict = _n0.a.dict;
@@ -10698,14 +10699,6 @@ var author$project$Main$coinCountStr = A2(
 var Orasund$pixelengine$PixelEngine$Tile$tileset = elm$core$Basics$identity;
 var author$project$Main$font = Orasund$pixelengine$PixelEngine$Tile$tileset(
 	{source: 'img/font.png', spriteHeight: 16, spriteWidth: 16});
-var author$project$Main$hasWonStr = function (model) {
-	var _n0 = model.finished;
-	if (_n0) {
-		return 'Won';
-	} else {
-		return 'Not Won';
-	}
-};
 var author$project$Main$scoreArea = function (model) {
 	return A2(
 		Orasund$pixelengine$PixelEngine$imageArea,
@@ -10720,16 +10713,21 @@ var author$project$Main$scoreArea = function (model) {
 				_Utils_Tuple2(0, 0),
 				A2(
 					Orasund$pixelengine$PixelEngine$Image$fromText,
-					author$project$Main$coinCountStr(model) + (' ' + author$project$Main$hasWonStr(model)),
+					author$project$Main$coinCountStr(model),
 					author$project$Main$font))
 			]));
 };
 var author$project$Main$areas = function (model) {
-	return _List_fromArray(
-		[
-			author$project$Main$scoreArea(model),
-			author$project$Main$gameArea(model)
-		]);
+	if (model.$ === 'Nothing') {
+		return _List_Nil;
+	} else {
+		var gstate = model.a;
+		return _List_fromArray(
+			[
+				author$project$Main$scoreArea(gstate),
+				author$project$Main$gameArea(gstate)
+			]);
+	}
 };
 var Orasund$pixelengine$PixelEngine$Graphics$Data$Options$withMovementSpeed = F2(
 	function (movementSpeed, _n0) {

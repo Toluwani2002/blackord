@@ -28,15 +28,15 @@ type Entity =
 
 type alias Platform = Grid.Grid Entity
 
-type alias Model =
+type alias GameState =
   { player : Player
   , platform : Platform
   , finishLine : Position
-  , finished : Bool
   }
 
-type Msg = MovePlayer Direction
+type alias Model = Maybe GameState
 
+type Msg = MovePlayer Direction
 
 main : PixelEngine () Model Msg
 main = game
@@ -81,16 +81,16 @@ initPlatform =
     , columns = boardSize
     }
 
-initModel : Model
-initModel =
+-- initModel : Model
+initGameState : GameState
+initGameState =
   { player = initPlayer
   , platform = initPlatform
   , finishLine = (29,29)
-  , finished = False
   }
 
 init : () -> (Model, Cmd Msg)
-init _ = (initModel, Cmd.none)
+init _ = (Just initGameState, Cmd.none)
 
 controls : Input -> Maybe Msg
 controls input =
@@ -114,21 +114,25 @@ controls input =
             Nothing
 
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg ({player, platform} as model) =
-  case msg of
-    MovePlayer direction ->
-      let
-        (g, p) =
-          checkAndMove platform direction player
-          |> coinPickup platform
-      in
-        ( { model |
-              player = p
-            , platform = g
-            , finished = checkToWin p model.finishLine
-          }
-        , Cmd.none
-        )
+update msg x =
+  case x of
+    Nothing -> (x, Cmd.none)
+    Just model ->
+      case msg of
+        MovePlayer direction ->
+          let
+            (g, p) =
+              checkAndMove model.platform direction model.player
+              |> coinPickup model.platform
+            newGameState =
+              { model
+                | player = p
+                , platform = g
+              }
+          in
+            ( checkToWin p model.finishLine newGameState
+            , Cmd.none
+            )
 
 checkAndMove : Grid.Grid Entity -> Direction -> Player -> Player
 checkAndMove grid direction player =
@@ -156,8 +160,12 @@ coinPickup grid player =
       )
     |> Result.withDefault (grid, player)
 
-checkToWin : Player -> Position -> Bool
-checkToWin player finishLinePosition = player.position == finishLinePosition && player.coinCount == 9
+checkToWin : Player -> Position -> GameState -> Model
+checkToWin player finishLinePosition gstate =
+  if player.position == finishLinePosition && player.coinCount == 9 then
+    Nothing
+  else
+    Just gstate
 
 subscriptions : Model -> Sub Msg
 subscriptions _ = Sub.none
@@ -179,27 +187,30 @@ view model =
 
 areas : Model -> List (Area Msg)
 areas model =
-  [ scoreArea model
-  , gameArea model
-  ]
+  case model of
+    Nothing -> []
+    Just gstate ->
+      [ scoreArea gstate
+      , gameArea gstate
+      ]
 
-scoreArea : Model -> Area Msg
+scoreArea : GameState -> Area Msg
 scoreArea model =
   PixelEngine.imageArea
     { height = 30
     , background = colorBackground (rgb255 255 255 255)
     }
-    [ ((0,0), Image.fromText ((coinCountStr model) ++ " " ++ (hasWonStr model)) font)
+    [ ((0,0), Image.fromText ((coinCountStr model)) font)
     ]
 
-coinCountStr : Model -> String
+coinCountStr : GameState -> String
 coinCountStr = .player >> .coinCount >> String.fromInt >> String.append "Coins - "
 
-hasWonStr : Model -> String
-hasWonStr model =
-  case model.finished of
-    True -> "Won"
-    False -> "Not Won"
+-- hasWonStr : GameState -> String
+-- hasWonStr model =
+--   case model.finished of
+--     True -> "Won"
+--     False -> "Not Won"
 
 font : Tile.Tileset
 font = Tile.tileset
@@ -208,7 +219,7 @@ font = Tile.tileset
   , spriteHeight = 16
   }
 
-gameArea : Model -> Area Msg
+gameArea : GameState -> Area Msg
 gameArea { platform, player, finishLine } = -- TODO: add ", finishLine" to this inputs of the function
   PixelEngine.tiledArea
       { rows = boardSize
