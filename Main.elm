@@ -36,7 +36,7 @@ type alias GameState =
 
 type alias Model = Maybe GameState
 
-type Msg = MovePlayer Direction
+type Msg = MovePlayer Direction | Restart
 
 main : PixelEngine () Model Msg
 main = game
@@ -79,7 +79,7 @@ initPlatform =
     , columns = boardSize
     }
 
--- initModel : Model
+
 initGameState : GameState
 initGameState =
   { player = initPlayer
@@ -87,8 +87,11 @@ initGameState =
   , finishLine = (29,29)
   }
 
+initModel : Model
+initModel = Just initGameState
+
 init : () -> (Model, Cmd Msg)
-init _ = (Just initGameState, Cmd.none)
+init _ = (initModel, Cmd.none)
 
 controls : Input -> Maybe Msg
 controls input =
@@ -114,7 +117,10 @@ controls input =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg x =
   case x of
-    Nothing -> (x, Cmd.none)
+    Nothing ->
+        case msg of
+          Restart -> (initModel, Cmd.none)
+          _       -> (x, Cmd.none)
     Just model ->
       case msg of
         MovePlayer direction ->
@@ -131,6 +137,7 @@ update msg x =
             ( checkToWin p model.finishLine newGameState
             , Cmd.none
             )
+        _ -> (x, Cmd.none)
 
 checkAndMove : Grid.Grid Entity -> Direction -> Player -> Player
 checkAndMove grid direction player =
@@ -198,7 +205,7 @@ gameWonArea =
     { height = 30
     , background = colorBackground (rgb255 255 255 255)
     }
-    [ ((400, 200), Image.fromText "You Win!!!" font)
+    [ ((300, 200), Image.clickable Restart <| Image.fromText "You Win!!! (click to restart)" font)
     ]
 
 scoreArea : GameState -> Area Msg
