@@ -186,11 +186,20 @@ view model =
 areas : Model -> List (Area Msg)
 areas model =
   case model of
-    Nothing -> []
+    Nothing -> [gameWonArea]
     Just gstate ->
       [ scoreArea gstate
       , gameArea gstate
       ]
+
+gameWonArea : Area Msg
+gameWonArea =
+  PixelEngine.imageArea
+    { height = 30
+    , background = colorBackground (rgb255 255 255 255)
+    }
+    [ ((400, 200), Image.fromText "You Win!!!" font)
+    ]
 
 scoreArea : GameState -> Area Msg
 scoreArea model =

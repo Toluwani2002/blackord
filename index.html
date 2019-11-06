@@ -10682,6 +10682,22 @@ var Orasund$pixelengine$PixelEngine$Image$fromText = F2(
 					_Utils_Tuple2(0, 0),
 					text)));
 	});
+var Orasund$pixelengine$PixelEngine$Tile$tileset = elm$core$Basics$identity;
+var author$project$Main$font = Orasund$pixelengine$PixelEngine$Tile$tileset(
+	{source: 'img/font.png', spriteHeight: 16, spriteWidth: 16});
+var author$project$Main$gameWonArea = A2(
+	Orasund$pixelengine$PixelEngine$imageArea,
+	{
+		background: Orasund$pixelengine$PixelEngine$colorBackground(
+			A3(avh4$elm_color$Color$rgb255, 255, 255, 255)),
+		height: 30
+	},
+	_List_fromArray(
+		[
+			_Utils_Tuple2(
+			_Utils_Tuple2(400, 200),
+			A2(Orasund$pixelengine$PixelEngine$Image$fromText, 'You Win!!!', author$project$Main$font))
+		]));
 var author$project$Main$coinCountStr = A2(
 	elm$core$Basics$composeR,
 	function ($) {
@@ -10696,9 +10712,6 @@ var author$project$Main$coinCountStr = A2(
 			elm$core$Basics$composeR,
 			elm$core$String$fromInt,
 			elm$core$String$append('Coins - '))));
-var Orasund$pixelengine$PixelEngine$Tile$tileset = elm$core$Basics$identity;
-var author$project$Main$font = Orasund$pixelengine$PixelEngine$Tile$tileset(
-	{source: 'img/font.png', spriteHeight: 16, spriteWidth: 16});
 var author$project$Main$scoreArea = function (model) {
 	return A2(
 		Orasund$pixelengine$PixelEngine$imageArea,
@@ -10719,7 +10732,8 @@ var author$project$Main$scoreArea = function (model) {
 };
 var author$project$Main$areas = function (model) {
 	if (model.$ === 'Nothing') {
-		return _List_Nil;
+		return _List_fromArray(
+			[author$project$Main$gameWonArea]);
 	} else {
 		var gstate = model.a;
 		return _List_fromArray(
