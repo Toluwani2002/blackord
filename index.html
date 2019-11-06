@@ -9750,10 +9750,9 @@ var author$project$Main$initGameState = {
 	platform: author$project$Main$initPlatform,
 	player: author$project$Main$initPlayer
 };
+var author$project$Main$initModel = elm$core$Maybe$Just(author$project$Main$initGameState);
 var author$project$Main$init = function (_n0) {
-	return _Utils_Tuple2(
-		elm$core$Maybe$Just(author$project$Main$initGameState),
-		elm$core$Platform$Cmd$none);
+	return _Utils_Tuple2(author$project$Main$initModel, elm$core$Platform$Cmd$none);
 };
 var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
 var author$project$Main$subscriptions = function (_n0) {
@@ -10228,22 +10227,30 @@ var author$project$Main$coinPickup = F2(
 var author$project$Main$update = F2(
 	function (msg, x) {
 		if (x.$ === 'Nothing') {
-			return _Utils_Tuple2(x, elm$core$Platform$Cmd$none);
+			if (msg.$ === 'Restart') {
+				return _Utils_Tuple2(author$project$Main$initModel, elm$core$Platform$Cmd$none);
+			} else {
+				return _Utils_Tuple2(x, elm$core$Platform$Cmd$none);
+			}
 		} else {
 			var model = x.a;
-			var direction = msg.a;
-			var _n2 = A2(
-				author$project$Main$coinPickup,
-				model.platform,
-				A3(author$project$Main$checkAndMove, model.platform, direction, model.player));
-			var g = _n2.a;
-			var p = _n2.b;
-			var newGameState = _Utils_update(
-				model,
-				{platform: g, player: p});
-			return _Utils_Tuple2(
-				A3(author$project$Main$checkToWin, p, model.finishLine, newGameState),
-				elm$core$Platform$Cmd$none);
+			if (msg.$ === 'MovePlayer') {
+				var direction = msg.a;
+				var _n3 = A2(
+					author$project$Main$coinPickup,
+					model.platform,
+					A3(author$project$Main$checkAndMove, model.platform, direction, model.player));
+				var g = _n3.a;
+				var p = _n3.b;
+				var newGameState = _Utils_update(
+					model,
+					{platform: g, player: p});
+				return _Utils_Tuple2(
+					A3(author$project$Main$checkToWin, p, model.finishLine, newGameState),
+					elm$core$Platform$Cmd$none);
+			} else {
+				return _Utils_Tuple2(x, elm$core$Platform$Cmd$none);
+			}
 		}
 	});
 var Orasund$elm_game_essentials$Grid$Bordered$toList = function (_n0) {
@@ -10340,7 +10347,7 @@ var author$project$Main$gameArea = function (_n0) {
 		Orasund$pixelengine$PixelEngine$tiledArea,
 		{
 			background: Orasund$pixelengine$PixelEngine$colorBackground(
-				A3(avh4$elm_color$Color$rgb255, 255, 255, 255)),
+				A3(avh4$elm_color$Color$rgb255, 0, 255, 255)),
 			rows: author$project$Main$boardSize,
 			tileset: {source: 'img/man.png', spriteHeight: author$project$Main$tileSize, spriteWidth: author$project$Main$tileSize}
 		},
@@ -10380,6 +10387,42 @@ var Orasund$pixelengine$PixelEngine$imageArea = F2(
 		return Orasund$pixelengine$PixelEngine$Graphics$Data$Area$Images(
 			{background: background, content: content, height: height});
 	});
+var rtfeldman$elm_css$VirtualDom$Styled$unstyledAttribute = function (prop) {
+	return A3(rtfeldman$elm_css$VirtualDom$Styled$Attribute, prop, _List_Nil, '');
+};
+var rtfeldman$elm_css$Html$Styled$Attributes$fromUnstyled = rtfeldman$elm_css$VirtualDom$Styled$unstyledAttribute;
+var Orasund$pixelengine$PixelEngine$Image$withAttributes = F2(
+	function (attributes, i) {
+		var customAttributes = i.customAttributes;
+		return _Utils_update(
+			i,
+			{
+				customAttributes: A2(
+					elm$core$List$append,
+					customAttributes,
+					A2(elm$core$List$map, rtfeldman$elm_css$Html$Styled$Attributes$fromUnstyled, attributes))
+			});
+	});
+var elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			elm$virtual_dom$VirtualDom$on,
+			event,
+			elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		elm$html$Html$Events$on,
+		'click',
+		elm$json$Json$Decode$succeed(msg));
+};
+var Orasund$pixelengine$PixelEngine$Image$clickable = function (msg) {
+	return Orasund$pixelengine$PixelEngine$Image$withAttributes(
+		_List_fromArray(
+			[
+				elm$html$Html$Events$onClick(msg)
+			]));
+};
 var Orasund$pixelengine$PixelEngine$Graphics$Data$Element$SingleSource = function (a) {
 	return {$: 'SingleSource', a: a};
 };
@@ -10682,6 +10725,7 @@ var Orasund$pixelengine$PixelEngine$Image$fromText = F2(
 					_Utils_Tuple2(0, 0),
 					text)));
 	});
+var author$project$Main$Restart = {$: 'Restart'};
 var Orasund$pixelengine$PixelEngine$Tile$tileset = elm$core$Basics$identity;
 var author$project$Main$font = Orasund$pixelengine$PixelEngine$Tile$tileset(
 	{source: 'img/font.png', spriteHeight: 16, spriteWidth: 16});
@@ -10695,8 +10739,11 @@ var author$project$Main$gameWonArea = A2(
 	_List_fromArray(
 		[
 			_Utils_Tuple2(
-			_Utils_Tuple2(400, 200),
-			A2(Orasund$pixelengine$PixelEngine$Image$fromText, 'You Win!!!', author$project$Main$font))
+			_Utils_Tuple2(300, 200),
+			A2(
+				Orasund$pixelengine$PixelEngine$Image$clickable,
+				author$project$Main$Restart,
+				A2(Orasund$pixelengine$PixelEngine$Image$fromText, 'You Win!!! (click to restart)', author$project$Main$font)))
 		]));
 var author$project$Main$coinCountStr = A2(
 	elm$core$Basics$composeR,

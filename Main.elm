@@ -242,7 +242,7 @@ gameArea { platform, player, finishLine } = -- TODO: add ", finishLine" to this 
           , spriteWidth  = tileSize
           , spriteHeight = tileSize
           }
-      , background = colorBackground (rgb255 255 255 255)
+      , background = colorBackground (rgb255 0 255 255)
       }
       ( platform
           |> Grid.toList
