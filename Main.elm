@@ -72,8 +72,6 @@ initPlatform =
         Just Platform
       else if y == 23 && x > 21 && x < 29 then
         Just Platform
-      else if x == 14 && y > 15 && y < 20 then
-        Just Platform
       else
         Nothing
     )
