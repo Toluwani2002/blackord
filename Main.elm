@@ -72,6 +72,10 @@ initPlatform =
         Just Platform
       else if y == 23 && x > 21 && x < 29 then
         Just Platform
+      else if y == 11 && x > 1 && x < 8 then
+        Just Platform
+      else if y == 10 && x > 2 && x < 6 then
+        Just Coin
       else
         Nothing
     )
